@@ -62,9 +62,9 @@ extern "system" fn hook_callback(code: i32, w_param: WPARAM, l_param: LPARAM) ->
 
             click = match key_struct.vkCode {
                 0x20 => _STATE && relative_click(_TARGET, 0.9375, 0.075), // VK_SPACE
-                0x43 => _STATE && relative_click(_TARGET, 0.675, 0.55), // VK_KEY_C
+                0x43 => _STATE && relative_click(_TARGET, 0.85, 0.075), // VK_KEY_C
                 0x51 => _STATE && relative_click(_TARGET, 0.47, 0.27), // VK_KEY_Q
-                0x53 => _STATE && relative_click(_TARGET, 0.85, 0.075), // VK_KEY_S
+                0x53 => _STATE && relative_click(_TARGET, 0.675, 0.55), // VK_KEY_S
                 0x72 => change_state(_TARGET), //VK_F3
                 0x73 => terminate_hook(_TARGET), //VK_F4
                 _ => false
