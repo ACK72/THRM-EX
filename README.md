@@ -1,13 +1,13 @@
 # THRM-EX
 
-Simple arknights macro for google play games, written in Rust
+Simple arknights key mapping for google play games, written in Rust
 
 ## Download
 
 - You can get latest builds at [release page](https://github.com/ACK72/THRM-EX/releases/latest)
 
 ## Feature
-- Lightweight macro
+- Lightweight
 - Automatically quit in 3 seconds if Arknights closed
 
 ## Key-Bindings
