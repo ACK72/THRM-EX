@@ -11,8 +11,9 @@ Simple arknights key mapping for google play games, written in Rust
 - Automatically quit in 3 seconds if Arknights closed
 
 ## Key-Bindings
+- Z: Deselect operator
+- X: Turn on skills
 - C: Control speed
-- S: Turn on skills
 - Q: Retreat operator
 - Space: Pause/Resume game
 - F3: Pause/Resume "macro"
