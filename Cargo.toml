@@ -1,9 +1,10 @@
 [package]
 name = "thrm_ex"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]
 confy = "*"
+spin_sleep = "*"
 serde = { version = "*", features = ["derive"] }
-windows = {version = "*", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"]}
+windows = {version = "*", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging"]}
