@@ -230,25 +230,31 @@ extern "system" fn mouse_callback(code: i32, w_param: WPARAM, l_param: LPARAM) -
 	}
 }
 
-fn get_gpg_info() -> (HWND, i32, i32) {
+fn get_gpg_info() -> (HWND, i32, i32, i32, i32) {
 	let hwnd = unsafe { FindWindowW(PCWSTR::null(), TITLE) };
 	let fwnd = unsafe { GetForegroundWindow() };
 
 	if hwnd == HWND(0) || hwnd != fwnd {
-		return (HWND(0), 0, 0);
+		return (HWND(0), 0, 0, 0, 0);
 	}
+
+	let mut window_rect = RECT::default();
+	let _ = unsafe { GetWindowRect(hwnd, &mut window_rect) };
 
 	let mut client_rect = RECT::default();
 	let _ = unsafe { GetClientRect(hwnd, &mut client_rect) };
 
+	let mut point = POINT { x: window_rect.left, y: window_rect.top };
+	let _ = unsafe { ScreenToClient(hwnd, &mut point) };
+
 	let width = client_rect.right - client_rect.left;
 	let height = client_rect.bottom - client_rect.top;
 
-	(hwnd, width, height)
+	(hwnd, width, height, point.x, point.y)
 }
 
 fn get_mouse_info(x: i32, y: i32) -> (i32, i32) {
-	let (hwnd, width, height) = get_gpg_info();
+	let (hwnd, width, height, _, _) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return (-1, -1);
@@ -264,21 +270,21 @@ fn get_mouse_info(x: i32, y: i32) -> (i32, i32) {
 	(point.x, point.y)
 }
 
-fn get_relative_point(rx: f32, ry: f32, w: i32, h: i32) -> isize {
-	let nx = (rx * w as f32) as isize;
-	let ny = (ry * h as f32) as isize;
+fn get_relative_point(rx: f32, ry: f32, w: i32, h: i32, ax: i32, ay: i32) -> isize {
+	let nx = ((rx * w as f32) as i32 - ax) as isize;
+	let ny = ((ry * h as f32) as i32 - ay) as isize;
 
 	ny << 16 | nx
 }
 
 fn input_tap(rx:f32, ry:f32) -> bool {
-	let (hwnd, width, height) = get_gpg_info();
+	let (hwnd, width, height, ax, ay) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return false;
 	}
 
-	let pos = get_relative_point(rx, ry, width, height);
+	let pos = get_relative_point(rx, ry, width, height, ax, ay);
 
 	unsafe {
 		let _ = PostMessageA(hwnd, WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos));
@@ -289,7 +295,7 @@ fn input_tap(rx:f32, ry:f32) -> bool {
 }
 
 fn clear_tap() -> bool {
-	let (hwnd, width, _) = get_gpg_info();
+	let (hwnd, width, _, ax, ay) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return false;
@@ -300,7 +306,7 @@ fn clear_tap() -> bool {
 	}
 	
 	let (x, y) = unsafe { POS };
-	let pos = y << 16 | x + (width as f32 * 0.005) as i32; // (width * 0.005) is dummy value, same position is not working
+	let pos = (y - ay) << 16 | x - ax + (width as f32 * 0.01) as i32; // (width * 0.01) is dummy value, same position is not working
 
 	let _ = unsafe { PostMessageA(hwnd, WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos as isize)) };
 	spin_sleep::sleep(Duration::new(0, 50 * 1000000));
@@ -312,7 +318,7 @@ fn clear_tap() -> bool {
 }
 
 fn input_swipe(position: (i32, i32), direction: DIRECTION, is_up: bool) -> bool {
-	let (hwnd, width, height) = get_gpg_info();
+	let (hwnd, width, height, ax, ay) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return false;
@@ -323,11 +329,14 @@ fn input_swipe(position: (i32, i32), direction: DIRECTION, is_up: bool) -> bool 
 		return true;
 	}
 
+	let x = x - ax;
+	let y = y - ay;
+
 	let (dx, dy) = match direction {
-		DIRECTION::UP => (0, (-0.1 * height as f32) as i32),
-		DIRECTION::DOWN => (0, (0.1 * height as f32) as i32),
-		DIRECTION::LEFT => ((-0.1 * width as f32) as i32, 0),
-		DIRECTION::RIGHT => ((0.1 * width as f32) as i32, 0),
+		DIRECTION::UP => (0, (-0.2 * height as f32) as i32),
+		DIRECTION::DOWN => (0, (0.2 * height as f32) as i32),
+		DIRECTION::LEFT => ((-0.2 * width as f32) as i32, 0),
+		DIRECTION::RIGHT => ((0.2 * width as f32) as i32, 0),
 		_ => return true
 	};
 
@@ -349,7 +358,7 @@ fn input_swipe(position: (i32, i32), direction: DIRECTION, is_up: bool) -> bool 
 		
 		let pos = y << 16 | x;
 		let _ = unsafe { PostMessageA(hwnd, WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos as isize)) };
-		spin_sleep::sleep(Duration::new(0, 50 * 1000000)); // 10ms is possible, but 50ms is more stable
+		spin_sleep::sleep(Duration::new(0, 10 * 1000000));
 
 		let pos = (y + dy) << 16 | (x + dx);
 		let _ = unsafe { PostMessageA(hwnd, WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos as isize)) };
@@ -359,7 +368,7 @@ fn input_swipe(position: (i32, i32), direction: DIRECTION, is_up: bool) -> bool 
 }
 
 fn change_state() -> bool {
-	let (hwnd, _, _) = get_gpg_info();
+	let (hwnd, _, _, _, _) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return false;
@@ -371,7 +380,7 @@ fn change_state() -> bool {
 }
 
 fn terminate_hook() -> bool {
-	let (hwnd, _, _) = get_gpg_info();
+	let (hwnd, _, _, _, _) = get_gpg_info();
 
 	if hwnd == HWND(0) {
 		return false;
